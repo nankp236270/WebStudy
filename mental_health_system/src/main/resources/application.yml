@@ -21,4 +21,4 @@ server:
 
 deepseek:
     api:
-        key: ********
+        key: ${DEEPSEEK_API_KEY}
