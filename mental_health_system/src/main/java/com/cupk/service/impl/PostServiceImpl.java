@@ -8,4 +8,5 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements PostService {
+    // 可扩展自定义方法
 }
