@@ -1,7 +1,9 @@
 package com.cupk.entity;
 
 import java.time.LocalDateTime;
+import lombok.Data;
 
+@Data
 public class Post {
     private Long id;
     private Long userId;
@@ -13,6 +15,4 @@ public class Post {
     private Integer commentCount;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-
-    // getter/setter
 }
