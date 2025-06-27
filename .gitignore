@@ -1,4 +1,14 @@
-target/
+# 忽略所有环境的机密属性文件
+mental_health_system/src/main/resources/secrets.properties
+
+# 忽略 IDE 配置文件
+.idea/
+*.iml
+
+# 忽略系统文件
+.DS_Store
+
+mental_health_system/target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

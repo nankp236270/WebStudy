@@ -18,3 +18,7 @@ server:
   port: 8080
   servlet:
     context-path: /mental 
+
+deepseek:
+    api:
+        key: ${DEEPSEEK_API_KEY}
