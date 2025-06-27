@@ -1,8 +1,8 @@
 spring:
     application:
-        name: BookMangeSystem
+        name: MentalHealthSystem
     datasource:
-        url: jdbc:mysql://localhost:3306/booksystem?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+        url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: root
         password: 123456
