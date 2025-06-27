@@ -2,12 +2,15 @@ package com.cupk.controller;
 
 import com.cupk.entity.User;
 import com.cupk.service.UserService;
+import com.cupk.dto.UserRegisterDTO;
+import com.cupk.dto.UserLoginDTO;
+import com.cupk.service.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/user")
 public class UserController {
     @Autowired
     private UserService userService;
@@ -35,5 +38,17 @@ public class UserController {
     @DeleteMapping("/{id}")
     public boolean delete(@PathVariable Long id) {
         return userService.removeById(id);
+    }
+
+    @PostMapping("/register")
+    public Result<?> register(@RequestBody UserRegisterDTO dto) {
+        userService.register(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/login")
+    public Result<String> login(@RequestBody UserLoginDTO dto) {
+        String token = userService.login(dto);
+        return Result.success(token);
     }
 }
