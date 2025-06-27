@@ -9,5 +9,4 @@ public class Comment {
     private String content;
     private LocalDateTime createTime;
 
-    // getter/setter
 }

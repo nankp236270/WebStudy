@@ -36,4 +36,32 @@ public class PostController {
         Post post = postService.getById(id);
         return Result.success(post);
     }
+
+    // 4. 点赞帖子
+    @PostMapping("/{id}/like")
+    public Result<?> likePost(@PathVariable("id") Long postId, @RequestParam Long userId) {
+        boolean success = postService.likePost(postId, userId);
+        return success ? Result.success() : Result.error("点赞失败，可能已经点赞过或帖子不存在");
+    }
+
+    // 5. 取消点赞
+    @DeleteMapping("/{id}/like")
+    public Result<?> unlikePost(@PathVariable("id") Long postId, @RequestParam Long userId) {
+        boolean success = postService.unlikePost(postId, userId);
+        return success ? Result.success() : Result.error("取消点赞失败，可能尚未点赞或帖子不存在");
+    }
+
+    // 6. 获取点赞状态
+    @GetMapping("/{id}/like/status")
+    public Result<?> getLikeStatus(@PathVariable("id") Long postId, @RequestParam Long userId) {
+        boolean hasLiked = postService.hasLiked(postId, userId);
+        return Result.success(hasLiked);
+    }
+
+    // 7. 获取点赞数
+    @GetMapping("/{id}/like/count")
+    public Result<?> getLikeCount(@PathVariable("id") Long postId) {
+        Long count = postService.getLikeCount(postId);
+        return Result.success(count);
+    }
 }
