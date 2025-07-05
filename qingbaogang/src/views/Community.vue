@@ -1516,8 +1516,13 @@ const getImageUrl = (imageUrl, index) => {
     return '/src/assets/default-avatar.png';
   }
   
-  // 使用直接图片API
-  return `http://localhost:8080/mental/api/static/direct-image/${filename}`
+  // 首先尝试直接图片API
+  // 检查filename是否包含查询参数（例如:1）
+  const cleanFilename = filename.split(':')[0]; // 移除任何:1这样的后缀
+  
+  // 使用后端基础URL直接访问新的API
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/mental';
+  return `${baseUrl}/api/static/direct-image/${cleanFilename}`
 }
 
 // 显示图片查看弹窗
@@ -1560,9 +1565,15 @@ const getImagesArray = (images) => {
           return url
         }
         
-        // 提取文件名
+        // 提取文件名，处理可能的查询参数
         const parts = url.split('/')
-        const filename = parts[parts.length - 1]
+        let filename = parts[parts.length - 1]
+        
+        // 清理文件名中的查询参数部分
+        if (filename.includes(':')) {
+          filename = filename.split(':')[0];
+        }
+        
         console.log(`提取的文件名: ${filename}`)
         
         // 检查文件名是否为空
@@ -1597,7 +1608,13 @@ const getImagesArray = (images) => {
       .map(url => {
         // 提取文件名，统一使用/static/upload/格式
         const parts = url.split('/')
-        const filename = parts[parts.length - 1]
+        let filename = parts[parts.length - 1]
+        
+        // 清理文件名中的查询参数部分
+        if (filename.includes(':')) {
+          filename = filename.split(':')[0];
+        }
+        
         return `/static/upload/${filename}`
       });
   }
@@ -1616,7 +1633,12 @@ const handleImageError = (event, post, index) => {
   
   if (url) {
     const parts = url.split('/')
-    const filename = parts[parts.length - 1]
+    let filename = parts[parts.length - 1]
+    
+    // 清理文件名中的查询参数部分
+    if (filename.includes(':')) {
+      filename = filename.split(':')[0];
+    }
     
     // 检查文件名是否为空
     if (!filename || filename === '') {
@@ -1627,7 +1649,8 @@ const handleImageError = (event, post, index) => {
     }
     
     // 使用我们新创建的API直接获取图片
-    const directImageUrl = `http://localhost:8080/mental/api/static/direct-image/${filename}`
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/mental';
+    const directImageUrl = `${baseUrl}/api/static/direct-image/${filename}`
     console.log(`使用直接图片API获取: ${directImageUrl}`)
     event.target.src = directImageUrl
     
@@ -1640,15 +1663,23 @@ const handleImageError = (event, post, index) => {
       
       // 尝试其他URL格式 - 按优先级排序
       const alternativeUrls = [
+        // 新增对接口的尝试
+        `${baseUrl}/api/resource/image/${filename}`,
+        // 添加对image子目录的支持
+        `${baseUrl}/static/upload/image/${filename}`,
+        `${baseUrl}/api/static/direct-image/image/${filename}`,
         // 最有可能成功的格式
-        `http://localhost:8080/mental/static/upload/${filename}`,
-        `http://localhost:8080/static/upload/${filename}`,
+        `${baseUrl}/static/upload/${filename}`,
+        `${baseUrl.replace('/mental', '')}/static/upload/${filename}`,
         `/mental/static/upload/${filename}`,
         // 其他可能的格式
-        `http://localhost:8080/mental/upload/${filename}`,
-        `http://localhost:8080/upload/${filename}`,
+        `${baseUrl}/upload/${filename}`,
+        `${baseUrl.replace('/mental', '')}/upload/${filename}`,
         `/mental/upload/${filename}`,
         `/upload/${filename}`,
+        // 检查src/main/resources/static/upload下是否有图片
+        `${baseUrl}/src/main/resources/static/upload/image/${filename}`,
+        `${baseUrl}/src/main/resources/static/upload/${filename}`,
         // 最后尝试直接访问文件名
         `/${filename}`
       ]

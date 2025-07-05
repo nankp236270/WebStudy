@@ -24,10 +24,10 @@
             <td>{{ music.id }}</td>
             <td>{{ music.artist }}</td>
             <td>
-              <img v-if="music.coverUrl" :src="getCoverUrl(music.coverUrl)" alt="封面" style="max-width: 60px;" />
+              <img v-if="music.coverUrl" :src="getCoverUrl(music.coverUrl)" alt="封面" style="max-width: 60px;" @error="handleImageError" />
             </td>
             <td>
-              <audio v-if="music.url" :src="getAudioUrl(music.url)" controls style="width: 120px;"></audio>
+              <audio v-if="music.url" :src="getAudioUrl(music.url)" controls style="width: 120px;" @error="handleAudioError"></audio>
             </td>
             <td>
               <button class="action-btn delete" @click="deleteMusic(music.id)">删除</button>
@@ -84,21 +84,29 @@ const backendBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:80
 function getCoverUrl(coverPath) {
   if (!coverPath) return '';
   if (coverPath.startsWith('http')) return coverPath;
-  // 如果是相对路径，添加后端基础URL
-  if (coverPath.startsWith('/')) {
-    return backendBaseUrl + coverPath;
-  }
-  return coverPath;
+  
+  // 提取文件名以处理子目录
+  const parts = coverPath.split('/');
+  const filename = parts[parts.length - 1];
+  
+  // 清理文件名，移除:1等后缀
+  const cleanFilename = filename.includes(':') ? filename.split(':')[0] : filename;
+  
+  // 尝试访问static/direct-image API
+  return `${backendBaseUrl}/api/static/direct-image/${cleanFilename}`;
 }
 
 function getAudioUrl(audioPath) {
   if (!audioPath) return '';
   if (audioPath.startsWith('http')) return audioPath;
-  // 如果是相对路径，添加后端基础URL
+  
+  // 添加后端基础URL处理所有相对路径
   if (audioPath.startsWith('/')) {
     return backendBaseUrl + audioPath;
+  } else {
+    // 处理不以/开头的相对路径
+    return `${backendBaseUrl}/${audioPath}`;
   }
-  return audioPath;
 }
 
 export default {
@@ -157,6 +165,34 @@ export default {
       if (!confirm('确定要删除该音乐吗？')) return;
       await deleteMusic(id);
       this.fetchMusic();
+    },
+    handleImageError(e) {
+      console.warn('封面图片加载失败:', e.target.src);
+      
+      // 获取原始URL和文件名
+      const originalUrl = e.target.src;
+      const parts = originalUrl.split('/');
+      const filename = parts[parts.length - 1].split(':')[0]; // 清理:1后缀
+      
+      if (!filename) {
+        e.target.src = '/src/assets/default-avatar.png';
+        return;
+      }
+      
+      // 尝试使用direct-image API获取图片
+      const directImageUrl = `${backendBaseUrl}/api/static/direct-image/${filename}`;
+      console.log(`尝试使用替代URL加载图片:`, directImageUrl);
+      
+      // 如果当前URL不是直接API，则尝试使用直接API
+      if (originalUrl !== directImageUrl) {
+        e.target.src = directImageUrl;
+      } else {
+        // 如果已经是直接API但仍然失败，使用默认图片
+        e.target.src = '/src/assets/default-avatar.png';
+      }
+    },
+    handleAudioError(e) {
+      console.warn('音频加载失败:', e.target.src);
     },
     getCoverUrl,
     getAudioUrl
