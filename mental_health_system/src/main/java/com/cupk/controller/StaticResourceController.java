@@ -54,10 +54,53 @@ public class StaticResourceController {
     @GetMapping("/direct-image/{filename:.+}")
     public ResponseEntity<Resource> getImageDirect(@PathVariable String filename) throws IOException {
         File uploadDirectory = new File(uploadDir);
-        Path imagePath = Paths.get(uploadDirectory.getAbsolutePath(), filename);
 
+        // 清理文件名，去除可能的:1后缀
+        String cleanFilename = filename;
+        if (filename.contains(":")) {
+            cleanFilename = filename.split(":")[0];
+        }
+
+        // 首先在主目录查找
+        Path imagePath = Paths.get(uploadDirectory.getAbsolutePath(), cleanFilename);
+        System.out.println("尝试查找图片: " + imagePath.toAbsolutePath());
+
+        // 如果主目录不存在，尝试在image子目录
         if (!Files.exists(imagePath)) {
-            return ResponseEntity.notFound().build();
+            Path imageSubdirPath = Paths.get(uploadDirectory.getAbsolutePath(), "image", cleanFilename);
+            System.out.println("主目录未找到，尝试image子目录: " + imageSubdirPath.toAbsolutePath());
+
+            if (Files.exists(imageSubdirPath)) {
+                imagePath = imageSubdirPath;
+                System.out.println("在image子目录找到图片: " + imagePath);
+            } else {
+                // 尝试在常见位置查找
+                String[] possiblePaths = {
+                        "src/main/resources/static/upload/image/",
+                        "static/upload/image/",
+                        "src/main/resources/static/upload/",
+                        "../src/main/resources/static/upload/image/",
+                        "../src/main/resources/static/upload/"
+                };
+
+                for (String path : possiblePaths) {
+                    Path alternatePath = Paths.get(path, cleanFilename);
+                    System.out.println("尝试备选路径: " + alternatePath.toAbsolutePath());
+
+                    if (Files.exists(alternatePath)) {
+                        imagePath = alternatePath;
+                        System.out.println("在备选路径找到图片: " + imagePath);
+                        break;
+                    }
+                }
+
+                if (!Files.exists(imagePath)) {
+                    System.out.println("所有路径都未找到图片: " + cleanFilename);
+                    return ResponseEntity.notFound().build();
+                }
+            }
+        } else {
+            System.out.println("在主目录找到图片: " + imagePath);
         }
 
         Resource resource = new FileSystemResource(imagePath.toFile());
@@ -66,6 +109,7 @@ public class StaticResourceController {
             contentType = "application/octet-stream";
         }
 
+        System.out.println("成功返回图片: " + imagePath + "，内容类型: " + contentType);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION,

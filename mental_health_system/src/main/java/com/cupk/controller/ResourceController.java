@@ -298,4 +298,76 @@ public class ResourceController {
             return Result.error("图片上传失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 处理带有特殊标记（如:1）的图片文件名
+     * 例如: 7c96122e-1889-4979-b...-f1ee1c873693.jpg:1
+     */
+    @GetMapping("/image/{filename:.+}")
+    public ResponseEntity<Resource> getImage(@PathVariable String filename) throws IOException {
+        logger.info("请求图片: {}", filename);
+
+        // 处理可能包含:1这样后缀的文件名
+        String cleanFilename = filename;
+        if (filename.contains(":")) {
+            cleanFilename = filename.split(":")[0];
+            logger.info("处理后的文件名: {}", cleanFilename);
+        }
+
+        File uploadDirectory = new File(uploadDir);
+
+        // 首先在主上传目录查找
+        Path imagePath = Paths.get(uploadDirectory.getAbsolutePath(), cleanFilename);
+        logger.info("查找图片路径: {}", imagePath);
+
+        // 如果在主目录找不到，尝试在image子目录查找
+        if (!Files.exists(imagePath)) {
+            logger.warn("图片不存在: {}", imagePath);
+            Path imageSubdirPath = Paths.get(uploadDirectory.getAbsolutePath(), "image", cleanFilename);
+            logger.info("尝试在image子目录查找: {}", imageSubdirPath);
+
+            if (Files.exists(imageSubdirPath)) {
+                logger.info("在image子目录找到图片: {}", imageSubdirPath);
+                imagePath = imageSubdirPath;
+            } else {
+                // 尝试在其他可能的位置查找
+                String[] possiblePaths = {
+                        "src/main/resources/static/upload/image/",
+                        "src/main/resources/static/upload/",
+                        "static/upload/image/",
+                        "static/upload/",
+                        "upload/image/",
+                        "upload/"
+                };
+
+                for (String path : possiblePaths) {
+                    Path alternatePath = Paths.get(path, cleanFilename);
+                    logger.info("尝试替代路径: {}", alternatePath);
+                    if (Files.exists(alternatePath)) {
+                        logger.info("在替代路径找到图片: {}", alternatePath);
+                        imagePath = alternatePath;
+                        break;
+                    }
+                }
+
+                // 如果仍然找不到，返回404
+                if (!Files.exists(imagePath)) {
+                    logger.error("无法找到图片: {}", cleanFilename);
+                    return ResponseEntity.notFound().build();
+                }
+            }
+        }
+
+        Resource resource = new FileSystemResource(imagePath.toFile());
+        String contentType = Files.probeContentType(imagePath);
+        if (contentType == null) {
+            contentType = "image/jpeg"; // 默认为JPEG
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + cleanFilename + "\"")
+                .body(resource);
+    }
 }
